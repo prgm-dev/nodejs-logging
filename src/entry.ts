@@ -18,7 +18,7 @@
 const EventId = require('eventid');
 import * as extend from 'extend';
 import {google} from '../protos/protos';
-import {objToStruct, structToObj, zuluToDateObj} from './utils/common';
+import {isAnObject, objToStruct, structToObj, zuluToDateObj} from './utils/common';
 import {
   makeHttpRequestData,
   CloudLoggingHttpRequest,
@@ -203,7 +203,7 @@ class Entry {
   toJSON(options: ToJsonOptions = {}, projectId = '') {
     const entry: EntryJson = extend(true, {}, this.metadata) as {} as EntryJson;
     // Format log message
-    if (Object.prototype.toString.call(this.data) === '[object Object]') {
+    if (isAnObject(this.data)) {
       entry.jsonPayload = objToStruct(this.data, {
         removeCircular: !!options.removeCircular,
         stringify: true,
@@ -275,7 +275,7 @@ class Entry {
         : undefined;
     // Format log payload.
     if (this.data !== undefined && this.data !== null) {
-      if (Object.prototype.toString.call(this.data) === '[object Object]') {
+      if (isAnObject(this.data)) {
         entry.jsonPayload = this.data
       } else if (typeof this.data === 'string') {
         entry.textPayload = this.data;
