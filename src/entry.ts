@@ -73,7 +73,8 @@ export interface EntryJson {
 // custom transport, most likely to process.stdout.
 export interface StructuredJson {
   // Universally supported properties
-  message?: string | object;
+  textPayload?: string;
+  jsonPayload?: object;
   httpRequest?: object;
   timestamp?: string;
   [INSERT_ID_KEY]?: string;
@@ -273,9 +274,15 @@ class Entry {
         ? meta.traceSampled
         : undefined;
     // Format log payload.
-    entry.message =
-      meta.textPayload || meta.jsonPayload || meta.protoPayload || undefined;
-    entry.message = this.data || entry.message;
+    if (this.data !== undefined && this.data !== null) {
+      if (Object.prototype.toString.call(this.data) === '[object Object]') {
+        entry.jsonPayload = this.data
+      } else if (typeof this.data === 'string') {
+        entry.textPayload = this.data;
+      } else {
+        entry.textPayload = String(this.data);
+      }
+    }
     // Format timestamp
     if (meta.timestamp instanceof Date) {
       entry.timestamp = meta.timestamp.toISOString();
