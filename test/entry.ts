@@ -327,19 +327,36 @@ describe('Entry', () => {
         [entryTypes.SPAN_ID_KEY]: '🍓',
         [entryTypes.TRACE_SAMPLED_KEY]: false,
         [entryTypes.LABELS_KEY]: {foo: '⌛️'},
-        message: 'this is a log',
+        textPayload: 'this is a log',
       };
       assert.deepStrictEqual(json, expectedJSON);
     });
 
-    it('should assign payloads to message in priority', () => {
+    it('should assign payloads to textPayload in priority', () => {
       entry = new Entry(METADATA);
       entry.metadata.textPayload = 'test log';
       let json = entry.toStructuredJSON();
-      assert.strictEqual(json.message, 'test log');
+      assert.strictEqual(json.textPayload, 'test log');
       entry.data = 'new test log';
       json = entry.toStructuredJSON();
-      assert.strictEqual(json.message, 'new test log');
+      assert.strictEqual(json.jsonPayload, undefined);
+      assert.strictEqual(json.textPayload, 'new test log');
+      entry.data = {message: 'new test log'};
+      json = entry.toStructuredJSON();
+      assert.deepStrictEqual(json.jsonPayload, {message: 'new test log'});
+    });
+
+    it('should assign payloads to jsonPayload when appropriate', () => {
+      entry = new Entry(METADATA);
+      entry.metadata.textPayload = 'test log';
+      let json = entry.toStructuredJSON();
+      assert.strictEqual(json.jsonPayload, undefined);
+      entry.data = 'new test log';
+      json = entry.toStructuredJSON();
+      assert.strictEqual(json.jsonPayload, undefined);
+      entry.data = {message: 'new test log'};
+      json = entry.toStructuredJSON();
+      assert.deepStrictEqual(json.jsonPayload, {message: 'new test log'});
     });
 
     it('should convert a string timestamp', () => {

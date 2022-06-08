@@ -273,14 +273,15 @@ class Entry {
       'traceSampled' in meta && meta.traceSampled !== null
         ? meta.traceSampled
         : undefined;
-    // Format log payload.
-    if (this.data !== undefined && this.data !== null) {
-      if (isAnObject(this.data)) {
-        entry.jsonPayload = this.data
-      } else if (typeof this.data === 'string') {
-        entry.textPayload = this.data;
+    // Format log payload, falling back to attributes from `this.metadata`
+    const data = this.data || jsonPayload || textPayload;
+    if (data !== undefined && data !== null) {
+      if (isAnObject(data)) {
+        entry.jsonPayload = data
+      } else if (typeof data === 'string') {
+        entry.textPayload = data;
       } else {
-        entry.textPayload = String(this.data);
+        entry.textPayload = String(data);
       }
     }
     // Format timestamp
