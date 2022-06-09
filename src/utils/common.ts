@@ -243,3 +243,12 @@ export function zuluToDateObj(zuluTime: string) {
     nanos: nanoSecs ? Number(nanoSecs.padEnd(9, '0')) : 0,
   };
 }
+
+/**
+ * Return `true` if argument `o` is an object.
+ * 
+ * @param o The unknown object to test.
+ */
+export function isAnObject(o: unknown): o is object {
+  return Object.prototype.toString.call(o) === '[object Object]'
+}

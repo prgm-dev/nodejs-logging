@@ -18,7 +18,7 @@
 const EventId = require('eventid');
 import * as extend from 'extend';
 import {google} from '../protos/protos';
-import {objToStruct, structToObj, zuluToDateObj} from './utils/common';
+import {isAnObject, objToStruct, structToObj, zuluToDateObj} from './utils/common';
 import {
   makeHttpRequestData,
   CloudLoggingHttpRequest,
@@ -73,7 +73,7 @@ export interface EntryJson {
 // custom transport, most likely to process.stdout.
 export interface StructuredJson {
   // Universally supported properties
-  message?: string | object;
+  message?: string;
   httpRequest?: object;
   timestamp?: string;
   [INSERT_ID_KEY]?: string;
@@ -86,6 +86,8 @@ export interface StructuredJson {
   // Properties not supported by all agents (e.g. Cloud Run, Functions)
   logName?: string;
   resource?: object;
+  // Other properties
+  [key: string]: unknown;
 }
 
 export interface ToJsonOptions {
@@ -202,7 +204,7 @@ class Entry {
   toJSON(options: ToJsonOptions = {}, projectId = '') {
     const entry: EntryJson = extend(true, {}, this.metadata) as {} as EntryJson;
     // Format log message
-    if (Object.prototype.toString.call(this.data) === '[object Object]') {
+    if (isAnObject(this.data)) {
       entry.jsonPayload = objToStruct(this.data, {
         removeCircular: !!options.removeCircular,
         stringify: true,
@@ -260,7 +262,7 @@ class Entry {
       ...validKeys
     } = meta;
     /* eslint-enable @typescript-eslint/no-unused-vars */
-    const entry: StructuredJson = extend(true, {}, validKeys) as {};
+    let entry: StructuredJson = extend(true, {}, validKeys) as {};
     // Re-map keys names.
     entry[LABELS_KEY] = meta.labels
       ? Object.assign({}, meta.labels)
@@ -272,10 +274,17 @@ class Entry {
       'traceSampled' in meta && meta.traceSampled !== null
         ? meta.traceSampled
         : undefined;
-    // Format log payload.
-    entry.message =
-      meta.textPayload || meta.jsonPayload || meta.protoPayload || undefined;
-    entry.message = this.data || entry.message;
+    // Format log payload, falling back to attributes from `this.metadata`
+    const data = this.data || jsonPayload || textPayload;
+    if (data !== undefined && data !== null) {
+      if (isAnObject(data)) {
+        entry = extend(true, {}, entry, data)
+      } else if (typeof data === 'string') {
+        entry.message = data;
+      } else {
+        entry.message = JSON.stringify(data);
+      }
+    }
     // Format timestamp
     if (meta.timestamp instanceof Date) {
       entry.timestamp = meta.timestamp.toISOString();
